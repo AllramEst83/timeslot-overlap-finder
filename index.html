@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Timezone Overlap Finder</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +16,9 @@
         <header>
             <h1>TimeSync</h1>
             <p>Find the perfect meeting time across timezones.</p>
+            <p class="helper-text" role="note">
+                AM means 00:00–11:59 (morning). PM means 12:00–23:59 (afternoon/evening). Times here use the 24‑hour clock (e.g., 13:30 = 1:30 PM).
+            </p>
         </header>
 
         <div class="main-content">
@@ -31,7 +34,7 @@
                     <div class="time-inputs">
                         <input type="time" id="start1" value="15:00">
                         <span>to</span>
-                        <input type="time" id="end1" value="18:00">
+                        <input type="time" id="end1" value="17:00">
                     </div>
                 </div>
             </div>
@@ -46,7 +49,7 @@
                 <div class="form-group">
                     <label>Availability</label>
                     <div class="time-inputs">
-                        <input type="time" id="start2" value="07:00">
+                        <input type="time" id="start2" value="08:30">
                         <span>to</span>
                         <input type="time" id="end2" value="10:00">
                     </div>

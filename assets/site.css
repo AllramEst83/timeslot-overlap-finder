@@ -44,6 +44,7 @@ header h1 {
   font-size: 2.5rem;
   font-weight: 700;
   background: linear-gradient(45deg, #6a11cb, #2575fc);
+  background-clip: text; /* standard */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -52,6 +53,12 @@ header p {
   margin-top: 0.5rem;
   font-size: 1.1rem;
   opacity: 0.8;
+}
+
+.helper-text {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  opacity: 0.85;
 }
 
 .main-content {
@@ -102,6 +109,13 @@ header p {
   font-size: 1rem;
   color: var(--dark-purple);
   box-sizing: border-box;
+}
+
+/* Use dynamic viewport height on supported mobile browsers to avoid address bar jump */
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
 }
 
 .time-inputs {
@@ -183,13 +197,75 @@ header p {
 }
 
 @media (max-width: 768px) {
+  :root {
+    font-size: 15px;
+  }
   body {
+    padding: max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+  .container {
+    border-radius: 16px;
     padding: 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: 1.75rem;
+  }
+  header p {
+    font-size: 1rem;
+  }
+  .helper-text {
+    font-size: 0.95rem;
   }
   .main-content {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  header h1 {
-    font-size: 2rem;
+  .timezone-panel {
+    padding: 1rem;
   }
+  .form-group select,
+  .form-group input[type="time"] {
+    font-size: 1rem;
+    min-height: 44px; /* comfortable touch target */
+  }
+  .time-inputs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .time-inputs span {
+    display: none; /* space constrained */
+  }
+  .slot-grid {
+    grid-template-columns: 1fr; /* one card per row */
+  }
+  .time-slot {
+    padding: 0.875rem;
+  }
+}
+
+/* Small utility to prevent zoom on input focus for iOS by keeping font-size >= 16px */
+@supports (-webkit-touch-callout: none) {
+  .form-group select,
+  .form-group input[type="time"] {
+    font-size: 16px;
+  }
+}
+
+/* Avoid layout shift due to time inputs min/max spinner on mobile */
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Prevent container overflow on very narrow screens */
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
 }

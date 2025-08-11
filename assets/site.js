@@ -28,6 +28,69 @@ document.addEventListener("DOMContentLoaded", () => {
     tz2Select.value = "America/Chicago"; // CST/CDT for Dallas
   }
 
+  // --- Timezone Utilities ---
+  // Parse "HH:MM" -> { h, m }
+  function parseHM(str) {
+    const [h, m] = str.split(":").map(Number);
+    return { h, m };
+  }
+
+  // Get the current date parts (year, month, day) in a specific IANA timezone
+  function getZonedTodayParts(timeZone, baseDate = new Date()) {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = Object.fromEntries(
+      dtf.formatToParts(baseDate).map((p) => [p.type, p.value])
+    );
+    return {
+      year: Number(parts.year),
+      month: Number(parts.month),
+      day: Number(parts.day),
+    };
+  }
+
+  // Compute the timezone offset (ms) for a given UTC date in a target timezone
+  function getTimeZoneOffsetMs(utcDate, timeZone) {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const parts = Object.fromEntries(
+      dtf.formatToParts(utcDate).map((p) => [p.type, p.value])
+    );
+    const asUTC = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second)
+    );
+    return asUTC - utcDate.getTime();
+  }
+
+  // Build a UTC Date representing HH:MM on "today" in the given timezone, with optional day offset
+  function zonedHhMmToUtc(timeZone, hours, minutes, dayOffset = 0) {
+    const { year, month, day } = getZonedTodayParts(timeZone);
+    const guessUTC = new Date(
+      Date.UTC(year, month - 1, day + dayOffset, hours, minutes, 0)
+    );
+    const tzOffset = getTimeZoneOffsetMs(guessUTC, timeZone);
+    // Subtract the tz offset to get the correct UTC instant for that wall time in the zone
+    return new Date(guessUTC.getTime() - tzOffset);
+  }
+
   // --- Calculation Logic ---
   function calculateOverlap() {
     const tz1 = tz1Select.value;
@@ -42,37 +105,22 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    // Convert wall times in each person's timezone to UTC instants
+    const { h: s1h, m: s1m } = parseHM(start1);
+    const { h: e1h, m: e1m } = parseHM(end1);
+    const { h: s2h, m: s2m } = parseHM(start2);
+    const { h: e2h, m: e2m } = parseHM(end2);
 
-    const p1StartUTC = new Date(`${today}T${start1}:00`);
-    const p1EndUTC = new Date(`${today}T${end1}:00`);
-    const p2StartUTC = new Date(`${today}T${start2}:00`);
-    const p2EndUTC = new Date(`${today}T${end2}:00`);
+    const p1CrossesMidnight = end1 < start1; // string comparison works for HH:MM
+    const p2CrossesMidnight = end2 < start2;
 
-    const getOffset = (tz) => {
-      const date = new Date();
-      const utcDate = new Date(
-        date.toLocaleString("en-US", { timeZone: "UTC" })
-      );
-      const tzDate = new Date(date.toLocaleString("en-US", { timeZone: tz }));
-      return utcDate.getTime() - tzDate.getTime();
-    };
+    const p1StartUTC = zonedHhMmToUtc(tz1, s1h, s1m, 0);
+    const p1EndUTC = zonedHhMmToUtc(tz1, e1h, e1m, p1CrossesMidnight ? 1 : 0);
+    const p2StartUTC = zonedHhMmToUtc(tz2, s2h, s2m, 0);
+    const p2EndUTC = zonedHhMmToUtc(tz2, e2h, e2m, p2CrossesMidnight ? 1 : 0);
 
-    const offset1 = getOffset(tz1);
-    const offset2 = getOffset(tz2);
-
-    const p1StartTrueUTC = new Date(p1StartUTC.getTime() + offset1);
-    const p1EndTrueUTC = new Date(p1EndUTC.getTime() + offset1);
-    const p2StartTrueUTC = new Date(p2StartUTC.getTime() + offset2);
-    const p2EndTrueUTC = new Date(p2EndUTC.getTime() + offset2);
-
-    if (p1EndTrueUTC < p1StartTrueUTC)
-      p1EndTrueUTC.setDate(p1EndTrueUTC.getDate() + 1);
-    if (p2EndTrueUTC < p2StartTrueUTC)
-      p2EndTrueUTC.setDate(p2EndTrueUTC.getDate() + 1);
-
-    const overlapStart = new Date(Math.max(p1StartTrueUTC, p2StartTrueUTC));
-    const overlapEnd = new Date(Math.min(p1EndTrueUTC, p2EndTrueUTC));
+    const overlapStart = new Date(Math.max(p1StartUTC, p2StartUTC));
+    const overlapEnd = new Date(Math.min(p1EndUTC, p2EndUTC));
 
     if (overlapStart < overlapEnd) {
       displayResults(overlapStart, overlapEnd, tz1, tz2);
